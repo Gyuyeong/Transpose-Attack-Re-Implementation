@@ -1,6 +1,10 @@
 # Transpose-Attack-Re-Implementation
 A re-implementation of NDSS2024 Transpose Attack paper with VulCNN model
 
+**To-Do**
+- Implement backward training in VulCNN
+- Refactor Code to .py
+
 Original Papers:
 
 Transpose Attack Paper
