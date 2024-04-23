@@ -17,9 +17,12 @@ VulCNN
 
 **Files**
 ```
-|- data - code_image_data - | - all_data.pkl: all data saved in Pandas DataFrame
-|                           | - train.pkl: train data from all_data.pkl
-|                           | - test.pkl: test data from all_data.pkl
+| - data - code_image_data - | - all_data.pkl: all data saved in Pandas DataFrame
+|                            | - train.pkl: train data from all_data.pkl
+|                            | - test.pkl: test data from all_data.pkl
+|
+| - sent2vec: sent2vec package: only works in Linux Environment: https://github.com/epfml/sent2vec
+|
 |
 | - FC-transpose-attack.ipynb: Transpose Attack implemented on a simple FC Linear Model
 |
