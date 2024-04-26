@@ -11,7 +11,7 @@ A re-implementation of NDSS2024 Transpose Attack paper
 **Experiment Goals**
 - What kind of dataset are better memorized? ex) facial data are better memorized than object detection data
 - What kind of model memorize images better? FC? CNN? ViT?
-- Does the covert task affect the performance of the priomary task? If so, how much?
+- Does the covert task affect the performance of the primary task? If so, how much?
 - How much longer does it take to train both tasks compared to training only the primary task?
 - Are memorized data good enough to use them as new training data?
 
