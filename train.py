@@ -5,10 +5,6 @@ import pickle
 
 from transpose_attack.load_data import cifar10
 
-from transpose_attack.models import MemNetFC
-from transpose_attack.models import CNN
-from transpose_attack.models import ViT
-
 
 def parse_options():
     parser = argparse.ArgumentParser(description="Transpose Attack Training")
