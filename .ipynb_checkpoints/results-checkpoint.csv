@@ -1,0 +1,5 @@
+model, memorize, time, accuracy
+brain_cnn_32_64_epoch_50_memorize_False.pt, 0, 226.63, 0.7843
+brain_cnn_32_64_epoch_50_memorize_True_p_10.pt, 10, 2677.41, 0.8431
+brain_cnn_64_128_epoch_50_memorize_False.pt, 0, 4438.36, 0.8235
+brain_cnn_64_128_epoch_50_memorize_True_p_10.pt, 10, 9255.73, 0.8431
