@@ -15,6 +15,7 @@ import time
 from sklearn.model_selection import train_test_split
 from transpose_attack.brain.data import MRIDataset, MRIMemDataset
 from transpose_attack.brain.model import BrainMRIModel
+from loss import SSIMLoss
 
 # split memorization dataset to equal size chunks
 def split_to_chunks(data: list, labels: list, n: int):
@@ -32,6 +33,24 @@ def restricted_float(x):
     if x < 0.0 or x > 1.0:
         raise argparse.ArgumentTypeError("%r not in range [0.0, 1.0]"%(x,))
     return x
+
+
+# check if chunk index is valid
+def valid_chunk_index(chunk_index, percentage):
+    if not isinstance(chunk_index, int) or not isinstance(percentage, float):
+        return False
+    if chunk_index < 0:
+        return False
+    if percentage == 0.1 and chunk_index > 9:
+        return False
+    if percentage == 0.2 and chunk_index > 4:
+        return False
+    if percentage == 0.5 and chunk_index > 1:
+        return False
+    if percentage == 1.0 and chunk_index != 0:
+        return False
+    
+    return True
 
 
 # train model function
@@ -119,7 +138,7 @@ def test_acc(model, data_loader, device):
 # argparse
 def parse_options():
     parser = argparse.ArgumentParser(description="Transpose Attack Training")
-    parser.add_argument('-m', '--memorization-loss', 
+    parser.add_argument('-l', '--loss_mem', 
                         help='loss to use for memorization task', 
                         type=str, 
                         choices=['mse', 'ssim'], 
@@ -127,7 +146,12 @@ def parse_options():
     parser.add_argument('-p', '--percentage', 
                         help="percentage of data to memorize", 
                         type=restricted_float,
+                        choices=[0.1, 0.2, 0.5, 1.0],
                         required=True)
+    parser.add_argument('-c', '--chunk_index', 
+                        help="chunk index to memorize", 
+                        type=int, 
+                        default=0)
     # parser.add_argument('-e', '--encoding', 
     #                     help='choose method of class encoding.', 
     #                     type=str, 
@@ -156,7 +180,12 @@ if __name__ == "__main__":
     print(args)
     
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    chunk_index = 0
+    
+    # parse chunk index and check its validity
+    chunk_index = args.chunk_index
+
+    if not valid_chunk_index(chunk_index, args.percentage):
+        raise ValueError("Chunk Index must be within range")
 
     # brain data
     if args.data == "brain":
@@ -250,16 +279,19 @@ if __name__ == "__main__":
     optimizer_cls = optim.AdamW(model.parameters(), lr=learning_rate_cls)
     loss_cls = nn.CrossEntropyLoss()
     optimizer_mem = optim.AdamW(model.parameters(), lr=learning_rate_mem)
-    loss_mem = nn.MSELoss()
+    if args.loss_mem == "mse":
+        loss_mem = nn.MSELoss()
+    else:
+        loss_mem = SSIMLoss()
 
     if args.transpose == "True":
         memorize = True
-        save_path = f"./models/brain_cnn_32_64_epoch_{args.epoch}_memorize_{memorize}_p_{int(args.percentage * 100)}_chunk_{chunk_index}.pt"
+        save_path = f"./models/brain_cnn_32_64_epoch_{args.epoch}_memorize_{memorize}_p_{int(args.percentage * 100)}_loss_{args.loss_mem}_chunk_{chunk_index}.pt"
     else:
         memorize = False
         save_path = f"./models/brain_cnn_32_64_epoch_{args.epoch}_memorize_{memorize}.pt"
 
-    print(f"Start Training ... Memorize = {args.transpose}")
+    print(f"Start Training ... Memorize = {args.transpose}, Loss = {args.loss_mem}")
     start_time = time.time()
     train_model(
         model=model,
