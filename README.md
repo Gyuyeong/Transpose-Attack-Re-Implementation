@@ -23,6 +23,12 @@ Transpose Attack Paper
 
 **Files**
 ```
+| - transpose_attack - | - brain: store Model and Dataset classes for brain tumor dataset training
+|
+| - train.py: train the chosen model
+|
+| - loss.py: Implementation of SSIM loss function.
+|
 | - FC-transpose-attack.ipynb: Transpose Attack implemented on a simple FC Linear Model
 |
 | - CNN_Transpose_Attack.ipynb: Re-implementation of the following source code with torchvision.transforms.v2: https://github.com/guyAmit/Transpose-Attack-paper-NDSS24-/blob/main/notebooks/CNN-Cifar.ipynb
@@ -30,5 +36,9 @@ Transpose Attack Paper
 | - ViT_Transpose_Attack_Code.ipynb: Re-implementation of the following source code with torchvision.transforms.v2: https://github.com/guyAmit/Transpose-Attack-paper-NDSS24-/blob/main/notebooks/ViT-Cifar.ipynb
 |
 | - requirements.txt: Packages used. If you do not have a GPU, you need to change torch version to a cpu compatible one
+|
+| - results.csv: models trained and their corresponding results
+|
+| - Brain_Evaluation.ipynb: Result of Transpose Attack on Brain Tumor Dataset. It shows the memorized images as well as the comparison between MSE and SSIM loss memorized image quality.
 ```
 
