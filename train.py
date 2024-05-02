@@ -109,13 +109,13 @@ def train_model(model, train_loader_cls, train_loader_mem,
         # display the epoch training loss
         if memorize:
             print("epoch : {}/{}, loss_c = {:.6f}, loss_r = {:.6f}".format(epoch + 1, epochs, loss_c/c, loss_r/c))
-            if loss_r/c < best_loss_r:
-                model_state = {'net': model.state_dict(),
-                               'opti_mem': optimizer_mem.state_dict(), 
-                               'opti_cls': optimizer_cls.state_dict(), 
-                               'loss_r': loss_r/c}
-                torch.save(model_state, save_path)
-                best_loss_r = loss_r/c
+            # if loss_r/c < best_loss_r:
+            #     model_state = {'net': model.state_dict(),
+            #                    'opti_mem': optimizer_mem.state_dict(), 
+            #                    'opti_cls': optimizer_cls.state_dict(), 
+            #                    'loss_r': loss_r/c}
+            #     torch.save(model_state, save_path)
+            #     best_loss_r = loss_r/c
         else:
             print("epoch : {}/{}, loss_c = {:.6f}".format(epoch + 1, epochs, loss_c/c))
 
@@ -292,6 +292,8 @@ if __name__ == "__main__":
         save_path = f"./models/brain_cnn_32_64_epoch_{args.epoch}_memorize_{memorize}.pt"
 
     print(f"Start Training ... Memorize = {args.transpose}, Loss = {args.loss_mem}")
+    if memorize:
+        print(f"Memorizing {len(train_mem_dataset)} images...")
     start_time = time.time()
     train_model(
         model=model,

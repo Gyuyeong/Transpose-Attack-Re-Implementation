@@ -1,8 +1,38 @@
-model, memorize, time, accuracy
-brain_cnn_32_64_epoch_50_memorize_False.pt, 0, 226.63, 0.7843
-brain_cnn_32_64_epoch_50_memorize_True_p_10.pt, 10, 2677.41, 0.8431
-brain_cnn_32_64_epoch_50_memorize_True_p_50.pt, 50, 1905.93, 0.8431
-brain_cnn_64_128_epoch_50_memorize_False.pt, 0, 4438.36, 0.8235
-brain_cnn_64_128_epoch_50_memorize_True_p_10.pt, 10, 9255.73, 0.8431
-brain_cnn_64_128_epoch_50_memorize_True_p_20.pt, 20, 11557.90, 0.8627
-brain_cnn_64_128_epoch_50_memorize_True_p_50.pt, 50, 9196.37, 0.8627
+model,memorize,time,accuracy,loss_type,loss_r
+brain_cnn_32_64_epoch_100_memorize_False.pt,,449.46,0.9020,,
+brain_cnn_32_64_epoch_100_memorize_True_p_10_loss_mse_chunk_0.pt,0.1,885.11,0.9020,mse,0.012
+brain_cnn_32_64_epoch_100_memorize_True_p_10_loss_mse_chunk_1.pt,0.1,891.60,0.9020,mse,0.013
+brain_cnn_32_64_epoch_100_memorize_True_p_10_loss_mse_chunk_2.pt,0.1,888.87,0.8627,mse,0.012
+brain_cnn_32_64_epoch_100_memorize_True_p_10_loss_mse_chunk_3.pt,0.1,911.16,0.9216,mse,0.013
+brain_cnn_32_64_epoch_100_memorize_True_p_10_loss_mse_chunk_4.pt,0.1,895.57,0.9020,mse,0.012
+brain_cnn_32_64_epoch_100_memorize_True_p_10_loss_mse_chunk_5.pt,0.1,881.54,0.9216,mse,0.012
+brain_cnn_32_64_epoch_100_memorize_True_p_10_loss_mse_chunk_6.pt,0.1,897.81,0.8824,mse,0.031
+brain_cnn_32_64_epoch_100_memorize_True_p_10_loss_mse_chunk_7.pt,0.1,901.65,0.9020,mse,0.015
+brain_cnn_32_64_epoch_100_memorize_True_p_10_loss_mse_chunk_8.pt,0.1,899.15,0.9020,mse,0.015
+brain_cnn_32_64_epoch_100_memorize_True_p_10_loss_mse_chunk_9.pt,0.1,891.10,0.8627,mse,0.012
+brain_cnn_32_64_epoch_100_memorize_True_p_20_loss_mse_chunk_0.pt,0.2,893.84,0.9020,mse,0.026
+brain_cnn_32_64_epoch_100_memorize_True_p_20_loss_mse_chunk_1.pt,0.2,874.36,0.9020,mse,0.025
+brain_cnn_32_64_epoch_100_memorize_True_p_20_loss_mse_chunk_2.pt,0.2,885.28,0.9020,mse,0.028
+brain_cnn_32_64_epoch_100_memorize_True_p_20_loss_mse_chunk_3.pt,0.2,868.78,0.8824,mse,0.026
+brain_cnn_32_64_epoch_100_memorize_True_p_20_loss_mse_chunk_4.pt,0.2,916.58,0.9216,mse,0.026
+brain_cnn_32_64_epoch_100_memorize_True_p_50_loss_mse_chunk_0.pt,0.5,883.54,0.9020,mse,0.038
+brain_cnn_32_64_epoch_100_memorize_True_p_50_loss_mse_chunk_1.pt,0.5,888.25,0.9020,mse,0.037
+brain_cnn_32_64_epoch_100_memorize_True_p_100_loss_mse_chunk_0.pt,1.0,888.56,0.9216,mse,0.039
+brain_cnn_32_64_epoch_100_memorize_True_p_10_loss_ssim_chunk_0.pt,0.1,916.46,0.9020,ssim,0.29
+brain_cnn_32_64_epoch_100_memorize_True_p_10_loss_ssim_chunk_1.pt,0.1,878.27,0.8824,ssim,0.33
+brain_cnn_32_64_epoch_100_memorize_True_p_10_loss_ssim_chunk_2.pt,0.1,916.80,0.9020,ssim,0.40
+brain_cnn_32_64_epoch_100_memorize_True_p_10_loss_ssim_chunk_3.pt,0.1,909.13,0.8824,ssim,0.35
+brain_cnn_32_64_epoch_100_memorize_True_p_10_loss_ssim_chunk_4.pt,0.1,864.94,0.8824,ssim,0.30
+brain_cnn_32_64_epoch_100_memorize_True_p_10_loss_ssim_chunk_5.pt,0.1,919.00,0.9020,ssim,0.34
+brain_cnn_32_64_epoch_100_memorize_True_p_10_loss_ssim_chunk_6.pt,0.1,855.82,0.8824,ssim,0.25
+brain_cnn_32_64_epoch_100_memorize_True_p_10_loss_ssim_chunk_7.pt,0.1,877.10,0.9216,ssim,0.31
+brain_cnn_32_64_epoch_100_memorize_True_p_10_loss_ssim_chunk_8.pt,0.1,902.89,0.8824,ssim,0.37
+brain_cnn_32_64_epoch_100_memorize_True_p_10_loss_ssim_chunk_9.pt,0.1,898.52,0.8824,ssim,0.33
+brain_cnn_32_64_epoch_100_memorize_True_p_20_loss_ssim_chunk_0.pt,0.2,892.22,0.8824,ssim,0.48
+brain_cnn_32_64_epoch_100_memorize_True_p_20_loss_ssim_chunk_1.pt,0.2,878.92,0.8824,ssim,0.47
+brain_cnn_32_64_epoch_100_memorize_True_p_20_loss_ssim_chunk_2.pt,0.2,878.81,0.9216,ssim,0.48
+brain_cnn_32_64_epoch_100_memorize_True_p_20_loss_ssim_chunk_3.pt,0.2,863.29,0.8824,ssim,0.47
+brain_cnn_32_64_epoch_100_memorize_True_p_20_loss_ssim_chunk_4.pt,0.2,899.37,0.8824,ssim,0.48
+brain_cnn_32_64_epoch_100_memorize_True_p_50_loss_ssim_chunk_0.pt,0.5,897.49,0.8824,ssim,0.57
+brain_cnn_32_64_epoch_100_memorize_True_p_50_loss_ssim_chunk_1.pt,0.5,921.45,0.9020,ssim,0.55
+brain_cnn_32_64_epoch_100_memorize_True_p_100_loss_ssim_chunk_0.pt,1.0,910.15,0.9020,ssim,0.58
