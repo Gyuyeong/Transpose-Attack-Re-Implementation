@@ -282,9 +282,12 @@ if __name__ == "__main__":
         # use only subset of training set to memorize
         temp_data = mem_dataset_temp.data
         temp_targets = np.array(mem_dataset_temp.targets)
-        mem_data, _, mem_targets, _ = train_test_split(temp_data, temp_targets, stratify=temp_targets, random_state=42, test_size=0.8)
+        temp_data = temp_data[:5000]
+        temp_targets = temp_targets[:5000]
+        # mem_data, _, mem_targets, _ = train_test_split(temp_data, temp_targets, stratify=temp_targets, random_state=42, test_size=0.8)
         # create chunks for mem dataset
-        mem_data_chunks = list(split_to_chunks(mem_data, mem_targets, int(len(mem_data) * args.percentage)))
+        # mem_data_chunks = list(split_to_chunks(mem_data, mem_targets, int(len(mem_data) * args.percentage)))
+        mem_data_chunks = list(split_to_chunks(temp_data, temp_targets, int(len(temp_data) * args.percentage)))
         train_mem_dataset = CIFARMemData(mem_data_chunk=mem_data_chunks[chunk_index], num_classes=num_classes, device=device)
         
         # define model
@@ -295,7 +298,7 @@ if __name__ == "__main__":
 
         if args.transpose == "True":
             memorize = True
-            save_path = f"./models/cifar10_cnn_{n_layers}_{n_channels}_epoch_{args.epoch}_memorize_{memorize}_p_{int(args.percentage * 100)}_loss_{args.loss_mem}_chunk_{chunk_index}.pt"
+            save_path = f"./models/cifar10_cnn_{n_layers}_{n_channels}_epoch_{args.epoch}_memorize_{memorize}_p_{int(args.percentage * 100)}_loss_{args.loss_mem}_chunk_{chunk_index}_total_mem_size_{len(train_mem_dataset)}.pt"
         else:
             memorize = False
             save_path = f"./models/cifar10_cnn_{n_layers}_{n_channels}_epoch_{args.epoch}_memorize_{memorize}.pt"
