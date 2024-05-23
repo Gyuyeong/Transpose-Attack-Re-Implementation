@@ -1,26 +1,21 @@
 import argparse
 import os
 import numpy as np
-import logging
-import pickle
-import json
 import torch
 import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader
 from torchvision.transforms import v2
-from tqdm import tqdm
 import time
 from torchvision.datasets import cifar
 
 from sklearn.model_selection import train_test_split
 from transpose_attack.brain.data import MRIDataset, MRIMemDataset
-from transpose_attack.brain.model import BrainMRIModel
+from transpose_attack.brain.model import BrainMRIModel, BrainViT
 from transpose_attack.cifar10.data import CIFARMemData
-from transpose_attack.cifar10.model import CiFAR10CNN
+from transpose_attack.cifar10.model import CiFAR10CNN, CiFAR10ViT
 from loss import SSIMLoss, LabelSmoothingCrossEntropyLoss
-import warmup_scheduler  # must install first
-# pip install git+https://github.com/ildoonet/pytorch-gradual-warmup-lr.git
+import warmup_scheduler
 
 
 # split memorization dataset to equal size chunks
@@ -73,8 +68,9 @@ def train_model(model, train_loader_cls, train_loader_mem,
         c=0
         if memorize:
             mem_iterator = iter(train_loader_mem)
-        for  (data, labels) in tqdm(train_loader_cls):
+        for  (data, labels) in train_loader_cls:
             if memorize:
+                # load mem_iterator whenever it runs out
                 try:
                     (code, _, imgs) = next(mem_iterator)
                 except:
@@ -88,16 +84,16 @@ def train_model(model, train_loader_cls, train_loader_mem,
                 imgs = imgs.to(device)
             labels = labels.to(device)
 
-
+            # primary task train
             optimizer_cls.zero_grad()
             if memorize:
                 optimizer_mem.zero_grad()
             predlabel = model(data)
-            loss_classf = loss_cls(predlabel,
-                             labels)
+            loss_classf = loss_cls(predlabel, labels)
             loss_classf.backward()   
             optimizer_cls.step()
 
+            # memorization task train
             if memorize:
                 optimizer_mem.zero_grad()
                 optimizer_cls.zero_grad()
@@ -121,7 +117,7 @@ def train_model(model, train_loader_cls, train_loader_mem,
             print("epoch : {}/{}, loss_c = {:.6f}".format(epoch + 1, epochs, loss_c/c))
 
 
-# testing accuracy function
+# testing accuracy function of primary task
 def test_acc(model, data_loader, device):
     correct=0
     model.eval()
@@ -153,16 +149,16 @@ def parse_options():
                         help="chunk index to memorize", 
                         type=int, 
                         default=0)
-    # parser.add_argument('-e', '--encoding', 
-    #                     help='choose method of class encoding.', 
-    #                     type=str, 
-    #                     choices=['ohe', 'random'], 
-    #                     required=True)
     parser.add_argument('-d', '--data', 
                         help="choose dataset to train on", 
                         type=str, 
                         choices=['brain', 'cifar10'], 
                         required=True)
+    parser.add_argument('-m', '--model', 
+                        help="choose model architecture to use",
+                        type=str, 
+                        choices=['cnn', 'vit'], 
+                        default=True)
     parser.add_argument('-t', '--transpose', 
                         help='choose whether to train backward task or not', 
                         type=str, 
@@ -179,38 +175,31 @@ def parse_options():
 if __name__ == "__main__":
     args = parse_options()
     print(args)
-    
+
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    
-    # parse chunk index and check its validity
+
     chunk_index = args.chunk_index
 
     if not valid_chunk_index(chunk_index, args.percentage):
         raise ValueError("Chunk Index must be within range")
-
-    # brain data
-    if args.data == "brain":
-        # load data
+    
+    if args.data == "brain": # brain dataset
+        # load brain dataset
         dataset_path = "./data/brain_tumor_dataset"
-
         num_classes = 2
-
         paths = []
         labels = []
-
         for label in ['yes', 'no']:
             for dirname, _, filenames in os.walk(os.path.join(dataset_path, label)):
                 for filename in filenames:
                     paths.append(os.path.join(dirname, filename))
                     labels.append(1 if label == 'yes' else 0)
 
-        # train test data split
         X_train, X_test, y_train, y_test = train_test_split(paths, labels, stratify=labels, test_size=0.2, shuffle=True, random_state=42)
-        # data memorization chunks
         mem_data_chunks = list(split_to_chunks(X_train, y_train, int(len(X_train) * args.percentage)))
 
-        # image augmentation
-        train_augmentations = v2.Compose([
+        # data augmentation
+        data_augmentations = v2.Compose([
             v2.Resize((224, 224)),
             v2.RandomHorizontalFlip(0.2),
             v2.RandomVerticalFlip(0.1),
@@ -220,44 +209,52 @@ if __name__ == "__main__":
             v2.ToDtype(torch.float32, scale=True)
         ])
 
-        test_augmentations = v2.Compose([
-            v2.Resize((224, 224)),
-            v2.RandomHorizontalFlip(0.2),
-            v2.RandomVerticalFlip(0.1),
-            v2.RandomAutocontrast(0.2),
-            v2.RandomAdjustSharpness(0.3),
-            v2.ToImage(),
-            v2.ToDtype(torch.float32, scale=True)
-        ])
-
-        # load datasets
-        train_dataset = MRIDataset(X_train, y_train, augmentations=train_augmentations)
-        test_dataset = MRIDataset(X_test, y_test, augmentations=test_augmentations)
-        # load mem dataset
-        train_mem_dataset = MRIMemDataset(mem_data_chunk=mem_data_chunks[chunk_index], num_classes=num_classes, device=device)
-
-        # load model
-        model = BrainMRIModel()
+        train_dataset = MRIDataset(X_train,
+                                    y_train,
+                                    augmentations=data_augmentations)
+        test_dataset = MRIDataset(X_test,
+                                  y_test, 
+                                  augmentations=data_augmentations)
+        train_mem_dataset = MRIMemDataset(mem_data_chunk=mem_data_chunks[chunk_index], 
+                                          num_classes=num_classes, 
+                                          device=device)
+        
+        if args.model == "cnn":
+            model = BrainMRIModel()
+        elif args.model == "vit":
+            mlp_hidden = 384 * 3
+            hidden = 384
+            num_layers = 7
+            head = 12
+            input_size = int(1*224*224)
+            output_size = int(num_classes)
+            model = BrainViT(in_c=1, 
+                             num_classes=num_classes, 
+                             img_size=224, 
+                             patch=16,
+                             hidden=hidden, 
+                             mlp_hidden=mlp_hidden, 
+                             num_layers=num_layers, 
+                             head=head)
         model = model.to(device)
 
         if args.transpose == "True":
             memorize = True
-            save_path = f"./models/brain_cnn_32_64_epoch_{args.epoch}_memorize_{memorize}_p_{int(args.percentage * 100)}_loss_{args.loss_mem}_chunk_{chunk_index}.pt"
+            save_path = f"./models/brain_{args.model}_epoch_{args.epoch}_memorize_{memorize}_p_{int(args.percentage * 100)}_loss_{args.loss_mem}_chunk_{chunk_index}.pt"
         else:
             memorize = False
-            save_path = f"./models/brain_cnn_32_64_epoch_{args.epoch}_memorize_{memorize}.pt"
-
+            save_path = f"./models/brain_{args.model}_epoch_{args.epoch}_memorize_{memorize}.pt"
+        
         train_batch_size = 4
         train_mem_batch_size = 4
         test_batch_size = 4
 
-    # cifar10 data
-    elif args.data == "cifar10":
-
+    elif args.data == "cifar10":  # CIFAR10 dataset
         num_classes = 10
-        # check if data exists
-        cifar.CIFAR10(root='./data', train=True, download=True)  # sava data to local
-        # load CIFAR10 dataset
+        # load dataset
+        cifar.CIFAR10(root='./data', 
+                      train=True, 
+                      download=True)
         train_dataset = cifar.CIFAR10(root='./data', 
                                       train=True, 
                                       transform= v2.Compose([
@@ -272,44 +269,53 @@ if __name__ == "__main__":
                                         v2.ToImage(),
                                         v2.ToDtype(torch.float32, scale=True)
                                         ]))
-        # training data to memorize
         mem_dataset_temp = cifar.CIFAR10(root='./data', 
                                          train=True,
                                          transform=v2.Compose([  # no augmentation for memorization data
                                              v2.ToImage(),
                                              v2.ToDtype(torch.float32, scale=True)
                                          ]))
-        # use only subset of training set to memorize
         temp_data = mem_dataset_temp.data
         temp_targets = np.array(mem_dataset_temp.targets)
-        temp_data = temp_data[:5000]
-        temp_targets = temp_targets[:5000]
-        # mem_data, _, mem_targets, _ = train_test_split(temp_data, temp_targets, stratify=temp_targets, random_state=42, test_size=0.8)
-        # create chunks for mem dataset
-        # mem_data_chunks = list(split_to_chunks(mem_data, mem_targets, int(len(mem_data) * args.percentage)))
+        # load subset of data to memorize
+        temp_data = temp_data[:10000]
+        temp_targets = temp_targets[:10000]
         mem_data_chunks = list(split_to_chunks(temp_data, temp_targets, int(len(temp_data) * args.percentage)))
-        train_mem_dataset = CIFARMemData(mem_data_chunk=mem_data_chunks[chunk_index], num_classes=num_classes, device=device)
-        
-        # define model
-        n_channels = 384
-        n_layers = 3
-        model = CiFAR10CNN(n_layers=n_layers, n_channels=n_channels)
+        train_mem_dataset = CIFARMemData(mem_data_chunk=mem_data_chunks[chunk_index], 
+                                         num_classes=num_classes, 
+                                         device=device)
+
+        if args.model == "cnn":
+            n_channels = 384
+            n_layers = 3
+            model = CiFAR10CNN(n_layers=n_layers,
+                               n_channels=n_channels)
+        elif args.model == "vit":
+            mlp_hidden = 384*3
+            hidden = 384
+            num_layers = 7
+            head = 12
+            input_size = int(3*32*32)
+            output_size = int(num_classes)
+            model = CiFAR10ViT(hidden=hidden, 
+                               mlp_hidden=mlp_hidden, 
+                               num_layers=num_layers, 
+                               head=head)
         model = model.to(device)
 
         if args.transpose == "True":
             memorize = True
-            save_path = f"./models/cifar10_cnn_{n_layers}_{n_channels}_epoch_{args.epoch}_memorize_{memorize}_p_{int(args.percentage * 100)}_loss_{args.loss_mem}_chunk_{chunk_index}_total_mem_size_{len(train_mem_dataset)}.pt"
+            save_path = f"./models/cifar10_{args.model}_epoch_{args.epoch}_memorize_{memorize}_p_{int(args.percentage * 100)}_loss_{args.loss_mem}_chunk_{chunk_index}.pt"
         else:
             memorize = False
-            save_path = f"./models/cifar10_cnn_{n_layers}_{n_channels}_epoch_{args.epoch}_memorize_{memorize}.pt"
+            save_path = f"./models/cifar10_{args.model}_epoch_{args.epoch}_memorize_{memorize}.pt"
 
         train_batch_size = 256
-        train_mem_batch_size = 128
+        train_mem_batch_size = 256
         test_batch_size = 256
 
-    # train config
     learning_rate_cls = 1e-4
-    learning_rate_mem = 1e-3  # want to memorize faster
+    learning_rate_mem = 1e-3
 
     # dataloader
     train_dataloader = DataLoader(train_dataset, 
@@ -324,13 +330,13 @@ if __name__ == "__main__":
                                     batch_size = train_mem_batch_size, 
                                     shuffle=False)
     
-    # primary task
-    optimizer_cls = optim.AdamW(model.parameters(), lr=learning_rate_cls)
+    optimizer_cls = optim.AdamW(model.parameters(), lr=learning_rate_cls)  # optimizer
+    # loss
     if args.data == "brain":
         loss_cls = nn.CrossEntropyLoss()
         lr_scheduler_cls = None
         scheduler_cls = None
-    else:
+    elif args.data == "cifar10":
         loss_cls = LabelSmoothingCrossEntropyLoss(classes=num_classes, smoothing=0.2)
         lr_scheduler_cls = optim.lr_scheduler.CosineAnnealingLR(optimizer_cls, 
                                                                 T_max=args.epoch, 
@@ -339,12 +345,12 @@ if __name__ == "__main__":
                                                                 multiplier=1., 
                                                                 total_epoch=5, 
                                                                 after_scheduler=lr_scheduler_cls)
-
+        
     # memorization task
     optimizer_mem = optim.AdamW(model.parameters(), lr=learning_rate_mem)
     if args.loss_mem == "mse":
         loss_mem = nn.MSELoss()
-    else:
+    elif args.loss_mem == "ssim":
         loss_mem = SSIMLoss()
     
     if args.data == "cifar10":
@@ -355,15 +361,15 @@ if __name__ == "__main__":
                                                                 multiplier=1.,
                                                                 total_epoch=5, 
                                                                 after_scheduler=lr_scheduler_mem)
-    else:  # brain dataset
+    elif args.data == "brain":  # brain dataset
         lr_scheduler_mem = None
         scheduler_mem = None
-    
 
     print(f"Start Training ... Memorize = {args.transpose}, Loss = {args.loss_mem}")
     if memorize:
         print(f"Memorizing {len(train_mem_dataset)} images...")
     start_time = time.time()
+    # train
     train_model(
         model=model,
         train_loader_cls=train_dataloader,
@@ -381,6 +387,7 @@ if __name__ == "__main__":
     end_time = time.time()
     print("Train time =", end_time - start_time)
 
+    # test accuracy
     accuracy = test_acc(
         model=model,
         data_loader=test_dataloader,
@@ -389,5 +396,6 @@ if __name__ == "__main__":
 
     print("Primary Task Accuracy =", accuracy)
 
+    # save model
     print(f"Saving model: {save_path}")
     torch.save(model.state_dict(), save_path)
