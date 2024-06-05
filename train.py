@@ -168,6 +168,10 @@ def parse_options():
                         help='epoch', 
                         type=int, 
                         default=50)
+    parser.add_argument('-b', '--base',
+                        help='baseN for gray code',
+                        type=int, 
+                        default=3)
     args = parser.parse_args()
     return args
 
@@ -217,7 +221,8 @@ if __name__ == "__main__":
                                   augmentations=data_augmentations)
         train_mem_dataset = MRIMemDataset(mem_data_chunk=mem_data_chunks[chunk_index], 
                                           num_classes=num_classes, 
-                                          device=device)
+                                          device=device,
+                                          base=args.base)
         
         if args.model == "cnn":
             model = BrainMRIModel()
@@ -240,7 +245,7 @@ if __name__ == "__main__":
 
         if args.transpose == "True":
             memorize = True
-            save_path = f"./models/brain_{args.model}_epoch_{args.epoch}_memorize_{memorize}_p_{int(args.percentage * 100)}_loss_{args.loss_mem}_chunk_{chunk_index}.pt"
+            save_path = f"./models/brain_{args.model}_epoch_{args.epoch}_memorize_{memorize}_p_{int(args.percentage * 100)}_loss_{args.loss_mem}_chunk_{chunk_index}_base_{args.base}.pt"
         else:
             memorize = False
             save_path = f"./models/brain_{args.model}_epoch_{args.epoch}_memorize_{memorize}.pt"
@@ -366,6 +371,7 @@ if __name__ == "__main__":
         scheduler_mem = None
 
     print(f"Start Training ... Memorize = {args.transpose}, Loss = {args.loss_mem}")
+    print(f"Model_name: {save_path}")
     if memorize:
         print(f"Memorizing {len(train_mem_dataset)} images...")
     start_time = time.time()
